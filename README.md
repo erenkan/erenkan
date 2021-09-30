@@ -1,8 +1,8 @@
 ### Hi there 👋
 
 <div style="display:flex;">
-<img src="https://github-readme-stats-erenkan.vercel.app/api?username=erenkan&theme=radical&count_private=true&show_icons=true">
-<img src="https://github-readme-stats-erenkan.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&count_private=true&show_icons=true">
+<img src="https://github-readme-stats-pink-nine.vercel.app/api?username=erenkan&theme=radical&count_private=true&show_icons=true">
+<img src="https://github-readme-stats-pink-nine.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&count_private=true&show_icons=true">
 </div>
 
 <!--
