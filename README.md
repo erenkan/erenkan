@@ -2,7 +2,7 @@
 
 <div style="display:flex;">
 <img src="https://github-readme-stats-aagzdqyyk-erenkan.vercel.app/api?username=erenkan&theme=radical&count_private=true&show_icons=true">
-<img src="https://github-readme-stats-aagzdqyyk-erenkan.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&show_icons=true&hide=html">
+<img src="https://github-readme-stats-aagzdqyyk-erenkan.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&show_icons=true&hide=html,css">
 </div>
 
 <!--
