@@ -1,8 +1,8 @@
 ### Hi there 👋
 
 <div style="display:flex;">
-<img src="https://github-readme-stats-c1qdp40l4-erenkan.vercel.app/api?username=erenkan&theme=radical&count_private=true&show_icons=true">
-<img src="https://github-readme-stats-c1qdp40l4-erenkan.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&show_icons=true&hide=html,css">
+<img src="https://github-readme-stats-ca5uilm44-erenkan.vercel.app/api?username=erenkan&theme=radical&count_private=true&show_icons=true">
+<img src="https://github-readme-stats-ca5uilm44-erenkan.vercel.app/api/top-langs/?username=erenkan&theme=radical&layout=compact&show_icons=true&hide=html,css">
 </div>
 
 <!--
@@ -19,3 +19,4 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+github-readme-stats-ca5uilm44-erenkan.vercel.app
