@@ -1,0 +1,11 @@
+erenkan@github
+OS:        macOS 26 (Darwin 25.5)
+Host:      Keymate.io
+Kernel:    Software Engineer · IAM & Frontend
+Uptime:    6 years
+Packages:  Keycloak, OAuth 2.0, OIDC, DPoP
+DE:        React, Next.js, TypeScript
+Shell:     zsh
+Languages: Java, TypeScript
+Location:  Istanbul, TR
+Contact:   erenkn@gmail.com
