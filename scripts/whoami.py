@@ -130,6 +130,37 @@ def tspans(cells):
         run, cur = ([ch], op) if ch is not None else ([], None)
     return "".join(out)
 
+def barrel_path(x, y, w, h, bulge, r):
+    """Rounded rectangle whose four sides bow outward by `bulge`/2: the face of a CRT tube."""
+    cx, cy = x + w / 2, y + h / 2
+    return (f"M{x+r:.1f},{y:.1f} Q{cx:.1f},{y-bulge:.1f} {x+w-r:.1f},{y:.1f} "
+            f"C{x+w-r/2:.1f},{y:.1f} {x+w:.1f},{y+r/2:.1f} {x+w:.1f},{y+r:.1f} "
+            f"Q{x+w+bulge:.1f},{cy:.1f} {x+w:.1f},{y+h-r:.1f} "
+            f"C{x+w:.1f},{y+h-r/2:.1f} {x+w-r/2:.1f},{y+h:.1f} {x+w-r:.1f},{y+h:.1f} "
+            f"Q{cx:.1f},{y+h+bulge:.1f} {x+r:.1f},{y+h:.1f} "
+            f"C{x+r/2:.1f},{y+h:.1f} {x:.1f},{y+h-r/2:.1f} {x:.1f},{y+h-r:.1f} "
+            f"Q{x-bulge:.1f},{cy:.1f} {x:.1f},{y+r:.1f} "
+            f"C{x:.1f},{y+r/2:.1f} {x+r/2:.1f},{y:.1f} {x+r:.1f},{y:.1f} Z")
+
+def displacement_map(w, h, strength, scale, step=8):
+    """PNG (base64) whose R/G channels bend straight lines outward like a curved CRT face.
+
+    feDisplacementMap samples the source at (x + scale*(R-0.5), y + scale*(G-0.5)); a line at
+    normalised v is shown at v*(1 + strength*(1-u^2)), so rows bow up at the top and down at the
+    bottom, columns bow out at the sides, and the centre stays put."""
+    cols, rows = max(2, int(w / step)), max(2, int(h / step))
+    u = (np.arange(cols) + 0.5) / cols * 2 - 1
+    v = (np.arange(rows) + 0.5) / rows * 2 - 1
+    U, V = np.meshgrid(u, v)
+    dx = -strength * U * (1 - V ** 2) * (w / 2)       # source offset in px
+    dy = -strength * V * (1 - U ** 2) * (h / 2)
+    img = np.zeros((rows, cols, 4), dtype=np.uint8)
+    img[..., 0] = np.clip(128 + dx / scale * 255, 0, 255)
+    img[..., 1] = np.clip(128 + dy / scale * 255, 0, 255)
+    img[..., 3] = 255
+    buf = io.BytesIO(); Image.fromarray(img, "RGBA").save(buf, "PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
 def build(a):
     fg, key, scr0, scr1 = PHOSPHOR[a.phosphor], ACCENT[a.accent], *SCREEN[a.phosphor]
     im = load_photo(a.photo)
@@ -143,16 +174,23 @@ def build(a):
     user_host = info[0]
     prompt = [(user_host, "u"), (":~$ ", ""), (a.cmd, "c")]
     prompt_len = sum(len(t) for t, _ in prompt)
-    PAD, FRAME, TITLE_H, GAP = 24, 6, 38, 30          # screen padding, window frame, title bar, art/info gap
-    LHI = FI * a.line_height                          # info / prompt line height
+    crt = a.chrome == "crt"
+    GAP, LHI = 30, FI * a.line_height                 # art/info gap, info line height
+    if crt:
+        PAD, L, T, B = 24, 30, 26, 46                 # screen padding; bezel left/right, top, bottom
+    else:
+        PAD, L, T, B = 24, 6, 38, 6                   # window frame, title bar
     art_w, art_h = a.cols * advA, len(rows) * FA
     info_w = max(len(l) for l in info + [" " * prompt_len]) * advI
     line = LHI + 6
-    W = int(round(max(FRAME + PAD + art_w + GAP + info_w + PAD + FRAME, a.width)))   # extra width = blank screen on the right
-    H = int(round(TITLE_H + FRAME + PAD + line + max(art_h, (len(info) + 4) * LHI) + line + PAD + FRAME))
-    x_art, x_info = FRAME + PAD, FRAME + PAD + art_w + GAP
+    W = int(round(max(L + PAD + art_w + GAP + info_w + PAD + L, a.width)))   # extra width = blank screen on the right
+    H = int(round(T + PAD + line + max(art_h, (len(info) + 4) * LHI) + line + PAD + B))
+    sx, sy, sw, sh = L, T, W - 2 * L, H - T - B       # screen rectangle
+    x_art, x_info = L + PAD, L + PAD + art_w + GAP
     base_off = (LHI - FI) / 2 + FI * ASC               # baseline offset inside an info line
-    y_prompt, y_top = TITLE_H + FRAME + PAD + base_off, TITLE_H + FRAME + PAD + line
+    y_prompt, y_top = T + PAD + base_off, T + PAD + line
+    screen = barrel_path(sx, sy, sw, sh, a.bulge, 22) if crt else None
+    dmap = displacement_map(sw + 2 * a.scale, sh + 2 * a.scale, a.curve, a.scale) if crt and a.curve > 0 else None
     title = f"{user_host}: ~ — {a.cmd}"
     font_b64 = base64.b64encode(open(a.font, "rb").read()).decode()
     anim = not a.static
@@ -162,14 +200,14 @@ def build(a):
     appear = (lambda t: f'<set attributeName="opacity" to="1" begin="{t:.2f}s" fill="freeze"/>') if anim else (lambda t: "")
     op0 = ' opacity="0"' if anim else ""
     P = []
-    P.append(f'<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="{escape(a.alt)}">')
+    P.append(f'<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="{escape(a.alt)}">')
     P.append(f"<title>{escape(a.alt)}</title>")
     P.append(f"""<defs>
 <style>
 @font-face{{font-family:"VT323";src:url(data:font/woff2;base64,{font_b64}) format("woff2");}}
 text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospace;white-space:pre;fill:{fg}}}
 .a{{font-size:{FA}px}} .i{{font-size:{FI}px}} .k{{fill:{key}}} .u{{fill:{key}}} .c{{fill:{ACCENT['green'] if a.phosphor == 'green' else '#ffd56a'}}} .d{{opacity:.5}}
-.t{{font-size:15px;fill:#9b9b9b;text-anchor:middle}}
+.t{{font-size:15px;fill:#9b9b9b;text-anchor:middle}} .l{{font-size:14px;fill:#7b7363;letter-spacing:2px}}
 @media (prefers-reduced-motion:reduce){{[opacity="0"]{{opacity:1 !important}}}}
 </style>
 <radialGradient id="scr" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="{scr0}"/><stop offset="1" stop-color="{scr1}"/></radialGradient>
@@ -177,18 +215,40 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
 <linearGradient id="bz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#1c1c1c"/></linearGradient>
 <linearGradient id="tb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d3d3d"/><stop offset="1" stop-color="#2a2a2a"/></linearGradient>
 <clipPath id="win"><rect width="{W}" height="{H}" rx="12"/></clipPath>
+<linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6cebc"/><stop offset="1" stop-color="#b6ad99"/></linearGradient>
+<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+<radialGradient id="halo"><stop offset="0" stop-color="{fg}" stop-opacity=".45"/><stop offset="1" stop-color="{fg}" stop-opacity="0"/></radialGradient>
+<radialGradient id="glass" cx="22%" cy="12%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".085"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
 <pattern id="scan" width="2" height="3" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#000" opacity="{a.scanline}"/></pattern>
 <filter id="glow" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="{a.glow}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>""")
-    sx, sy, sw, sh = FRAME, TITLE_H, W - 2 * FRAME, H - TITLE_H - FRAME      # screen rectangle
-    P.append(f'<g clip-path="url(#win)">')
-    P.append(f'<rect width="{W}" height="{H}" fill="#1f1f1f"/>')
-    P.append(f'<rect width="{W}" height="{TITLE_H}" fill="url(#tb)"/>')
-    P.append(f'<rect y="{TITLE_H - 1}" width="{W}" height="1" fill="#141414"/>')
-    for i, (c1, c2) in enumerate([("#ff5f57", "#e0443e"), ("#febc2e", "#dea123"), ("#28c840", "#1aab29")]):
-        P.append(f'<circle cx="{20 + i * 20}" cy="{TITLE_H / 2:.0f}" r="6" fill="{c1}" stroke="{c2}" stroke-width="0.8"/>')
-    P.append(f'<text class="t" x="{W / 2:.0f}" y="{TITLE_H / 2 + 5:.0f}">{escape(title)}</text>')
-    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scr)"/>')
+    if crt:
+        P.append(f'<defs><clipPath id="scr-clip"><path d="{screen}"/></clipPath>')
+        if dmap:
+            P.append(f'<filter id="crt" x="0" y="0" width="{W}" height="{H}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">'
+                     f'<feImage href="data:image/png;base64,{dmap}" xlink:href="data:image/png;base64,{dmap}" x="{sx - a.scale}" y="{sy - a.scale}" width="{sw + 2 * a.scale}" height="{sh + 2 * a.scale}" preserveAspectRatio="none" result="map"/>'
+                     f'<feDisplacementMap in="SourceGraphic" in2="map" scale="{a.scale}" xChannelSelector="R" yChannelSelector="G"/></filter>')
+        P.append('</defs>')
+        P.append(f'<rect width="{W}" height="{H}" rx="24" fill="url(#body)"/>')
+        P.append(f'<rect x=".5" y=".5" width="{W-1}" height="{H-1}" rx="23.5" fill="none" stroke="#8d8574"/>')
+        P.append(f'<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="22.5" fill="none" stroke="#f1ece0" stroke-opacity=".8"/>')
+        P.append(f'<path d="{barrel_path(sx - 5, sy - 5, sw + 10, sh + 10, a.bulge, 26)}" fill="#a59d8c"/>')
+        P.append(f'<path d="{barrel_path(sx - 2, sy - 2, sw + 4, sh + 4, a.bulge, 24)}" fill="#6f6859"/>')
+        P.append(f'<text class="l" x="{sx + 22}" y="{H - 14}">VT·323</text>')
+        P.append(f'<text class="l" x="{W - 52}" y="{H - 15}" text-anchor="end" font-size="11">POWER</text>')
+        P.append(f'<circle cx="{W - 32}" cy="{H - 18}" r="7" fill="#5a5447"/><circle cx="{W - 32}" cy="{H - 18}" r="11" fill="url(#halo)"/><circle cx="{W - 32}" cy="{H - 18}" r="4" fill="{fg}"/>')
+        P.append(f'<path d="{screen}" fill="url(#scr)"/>')
+        P.append('<g clip-path="url(#scr-clip)">')
+        P.append('<g filter="url(#crt)">' if dmap else '<g>')
+    else:
+        P.append(f'<g clip-path="url(#win)">')
+        P.append(f'<rect width="{W}" height="{H}" fill="#1f1f1f"/>')
+        P.append(f'<rect width="{W}" height="{T}" fill="url(#tb)"/>')
+        P.append(f'<rect y="{T - 1}" width="{W}" height="1" fill="#141414"/>')
+        for i, (c1, c2) in enumerate([("#ff5f57", "#e0443e"), ("#febc2e", "#dea123"), ("#28c840", "#1aab29")]):
+            P.append(f'<circle cx="{20 + i * 20}" cy="{T / 2:.0f}" r="6" fill="{c1}" stroke="{c2}" stroke-width="0.8"/>')
+        P.append(f'<text class="t" x="{W / 2:.0f}" y="{T / 2 + 5:.0f}">{escape(title)}</text>')
+        P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scr)"/>')
     P.append('<g filter="url(#glow)">')
     # prompt line, typed character by character
     chars, i = [], 0
@@ -220,10 +280,18 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
     y_end = max(y_top + len(rows) * FA, y_top + (base + 2) * LHI) + base_off + 4
     cur = '<tspan>█<animate attributeName="opacity" values="1;1;0;0" dur="1.1s" repeatCount="indefinite"/></tspan>' if anim else "█"
     P.append(f'<text class="i" x="{x_art}" y="{y_end:.1f}"{op0}><tspan class="u">{escape(user_host)}</tspan>:~$ {cur}{appear(t_end)}</text>')
-    P.append("</g>")
-    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scan)"/>')
-    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#vig)"/>')
-    P.append("</g>")
+    P.append("</g>")                                                   # glow
+    if crt:
+        P.append(f'<rect x="{sx - 4}" y="{sy - 4}" width="{sw + 8}" height="{sh + 8}" fill="url(#scan)"/>')
+        P.append("</g>")                                               # displacement
+        P.append(f'<path d="{screen}" fill="url(#vig)"/>')
+        P.append(f'<path d="{screen}" fill="url(#glass)"/>')
+        P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="30" fill="url(#shade)"/>')
+        P.append("</g>")                                               # clip
+    else:
+        P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scan)"/>')
+        P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#vig)"/>')
+        P.append("</g>")
     P.append("</svg>\n")
     svg = "\n".join(P)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
@@ -237,6 +305,10 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=os.path.join(here, "..", "whoami.svg"))
     ap.add_argument("--info", default=os.path.join(here, "info.txt"))
     ap.add_argument("--font", default=os.path.join(here, "..", "fonts", "VT323-subset.woff2"))
+    ap.add_argument("--chrome", choices=["crt", "window"], default="crt", help="CRT monitor bezel or macOS-style window")
+    ap.add_argument("--bulge", type=float, default=10.0, help="crt: outward bow of the screen edges (px)")
+    ap.add_argument("--curve", type=float, default=0.028, help="crt: barrel distortion strength (0 = off)")
+    ap.add_argument("--scale", type=int, default=24, help="crt: displacement map scale (px)")
     ap.add_argument("--cmd", default="whoami"); ap.add_argument("--width", type=float, default=900, help="minimum card width in px; content stays left-aligned")
     ap.add_argument("--phosphor", choices=PHOSPHOR, default="green"); ap.add_argument("--accent", choices=ACCENT, default="amber")
     ap.add_argument("--cols", type=int, default=100); ap.add_argument("--art-size", type=float, default=8.5); ap.add_argument("--info-size", type=float, default=20.0); ap.add_argument("--line-height", type=float, default=1.15)
