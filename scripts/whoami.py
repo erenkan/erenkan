@@ -218,7 +218,7 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
 <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6cebc"/><stop offset="1" stop-color="#b6ad99"/></linearGradient>
 <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
 <radialGradient id="halo"><stop offset="0" stop-color="{fg}" stop-opacity=".45"/><stop offset="1" stop-color="{fg}" stop-opacity="0"/></radialGradient>
-<radialGradient id="glass" cx="22%" cy="12%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".085"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<radialGradient id="glass" cx="22%" cy="12%" r="55%"><stop offset="0" stop-color="#fff" stop-opacity=".11"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient>
 <pattern id="scan" width="2" height="3" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#000" opacity="{a.scanline}"/></pattern>
 <filter id="glow" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="{a.glow}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>""")
@@ -239,7 +239,7 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
         P.append(f'<circle cx="{W - 32}" cy="{H - 18}" r="7" fill="#5a5447"/><circle cx="{W - 32}" cy="{H - 18}" r="11" fill="url(#halo)"/><circle cx="{W - 32}" cy="{H - 18}" r="4" fill="{fg}"/>')
         P.append(f'<path d="{screen}" fill="url(#scr)"/>')
         P.append('<g clip-path="url(#scr-clip)">')
-        P.append('<g filter="url(#crt)">' if dmap else '<g>')
+        P.append('<g filter="url(#crt)">' if (dmap and a.distort_text) else '<g>')
     else:
         P.append(f'<g clip-path="url(#win)">')
         P.append(f'<rect width="{W}" height="{H}" fill="#1f1f1f"/>')
@@ -282,8 +282,10 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
     P.append(f'<text class="i" x="{x_art}" y="{y_end:.1f}"{op0}><tspan class="u">{escape(user_host)}</tspan>:~$ {cur}{appear(t_end)}</text>')
     P.append("</g>")                                                   # glow
     if crt:
+        P.append("</g>")                                               # text group (distorted only with --distort-text)
+        P.append('<g filter="url(#crt)">' if dmap else '<g>')          # scanlines always follow the glass curvature
         P.append(f'<rect x="{sx - 4}" y="{sy - 4}" width="{sw + 8}" height="{sh + 8}" fill="url(#scan)"/>')
-        P.append("</g>")                                               # displacement
+        P.append("</g>")
         P.append(f'<path d="{screen}" fill="url(#vig)"/>')
         P.append(f'<path d="{screen}" fill="url(#glass)"/>')
         P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="30" fill="url(#shade)"/>')
@@ -309,6 +311,7 @@ if __name__ == "__main__":
     ap.add_argument("--bulge", type=float, default=10.0, help="crt: outward bow of the screen edges (px)")
     ap.add_argument("--curve", type=float, default=0.028, help="crt: barrel distortion strength (0 = off)")
     ap.add_argument("--scale", type=int, default=24, help="crt: displacement map scale (px)")
+    ap.add_argument("--distort-text", action="store_true", help="crt: also bend the text (off: text stays crisp, only the scanlines curve)")
     ap.add_argument("--cmd", default="whoami"); ap.add_argument("--width", type=float, default=900, help="minimum card width in px; content stays left-aligned")
     ap.add_argument("--phosphor", choices=PHOSPHOR, default="green"); ap.add_argument("--accent", choices=ACCENT, default="amber")
     ap.add_argument("--cols", type=int, default=100); ap.add_argument("--art-size", type=float, default=8.5); ap.add_argument("--info-size", type=float, default=20.0); ap.add_argument("--line-height", type=float, default=1.15)
