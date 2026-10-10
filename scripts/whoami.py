@@ -143,14 +143,17 @@ def build(a):
     user_host = info[0]
     prompt = [(user_host, "u"), (":~$ ", ""), (a.cmd, "c")]
     prompt_len = sum(len(t) for t, _ in prompt)
-    PAD, BEZEL, GAP = 26, 14, 30
+    PAD, FRAME, TITLE_H, GAP = 24, 6, 38, 30          # screen padding, window frame, title bar, art/info gap
+    LHI = FI * a.line_height                          # info / prompt line height
     art_w, art_h = a.cols * advA, len(rows) * FA
     info_w = max(len(l) for l in info + [" " * prompt_len]) * advI
-    line = FI + 6
-    W = int(round(max(BEZEL + PAD + art_w + GAP + info_w + PAD + BEZEL, a.width)))   # extra width = blank screen on the right
-    H = int(round(BEZEL + PAD + line + max(art_h, (len(info) + 4) * FI) + line + PAD + BEZEL))
-    x_art, x_info = BEZEL + PAD, BEZEL + PAD + art_w + GAP
-    y_prompt, y_top = BEZEL + PAD + FI * ASC, BEZEL + PAD + line
+    line = LHI + 6
+    W = int(round(max(FRAME + PAD + art_w + GAP + info_w + PAD + FRAME, a.width)))   # extra width = blank screen on the right
+    H = int(round(TITLE_H + FRAME + PAD + line + max(art_h, (len(info) + 4) * LHI) + line + PAD + FRAME))
+    x_art, x_info = FRAME + PAD, FRAME + PAD + art_w + GAP
+    base_off = (LHI - FI) / 2 + FI * ASC               # baseline offset inside an info line
+    y_prompt, y_top = TITLE_H + FRAME + PAD + base_off, TITLE_H + FRAME + PAD + line
+    title = f"{user_host}: ~ — {a.cmd}"
     font_b64 = base64.b64encode(open(a.font, "rb").read()).decode()
     anim = not a.static
     typing_dt = 0.055
@@ -166,16 +169,26 @@ def build(a):
 @font-face{{font-family:"VT323";src:url(data:font/woff2;base64,{font_b64}) format("woff2");}}
 text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospace;white-space:pre;fill:{fg}}}
 .a{{font-size:{FA}px}} .i{{font-size:{FI}px}} .k{{fill:{key}}} .u{{fill:{key}}} .c{{fill:{ACCENT['green'] if a.phosphor == 'green' else '#ffd56a'}}} .d{{opacity:.5}}
+.t{{font-size:15px;fill:#9b9b9b;text-anchor:middle}}
 @media (prefers-reduced-motion:reduce){{[opacity="0"]{{opacity:1 !important}}}}
 </style>
 <radialGradient id="scr" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="{scr0}"/><stop offset="1" stop-color="{scr1}"/></radialGradient>
-<radialGradient id="vig" cx="50%" cy="50%" r="72%"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.65"/></radialGradient>
+<radialGradient id="vig" cx="50%" cy="50%" r="72%"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.5"/></radialGradient>
 <linearGradient id="bz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2b2b"/><stop offset="1" stop-color="#1c1c1c"/></linearGradient>
+<linearGradient id="tb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d3d3d"/><stop offset="1" stop-color="#2a2a2a"/></linearGradient>
+<clipPath id="win"><rect width="{W}" height="{H}" rx="12"/></clipPath>
 <pattern id="scan" width="2" height="3" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#000" opacity="{a.scanline}"/></pattern>
 <filter id="glow" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="{a.glow}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>""")
-    P.append(f'<rect width="{W}" height="{H}" rx="18" fill="url(#bz)"/>')
-    P.append(f'<rect x="{BEZEL}" y="{BEZEL}" width="{W-2*BEZEL}" height="{H-2*BEZEL}" rx="10" fill="url(#scr)"/>')
+    sx, sy, sw, sh = FRAME, TITLE_H, W - 2 * FRAME, H - TITLE_H - FRAME      # screen rectangle
+    P.append(f'<g clip-path="url(#win)">')
+    P.append(f'<rect width="{W}" height="{H}" fill="#1f1f1f"/>')
+    P.append(f'<rect width="{W}" height="{TITLE_H}" fill="url(#tb)"/>')
+    P.append(f'<rect y="{TITLE_H - 1}" width="{W}" height="1" fill="#141414"/>')
+    for i, (c1, c2) in enumerate([("#ff5f57", "#e0443e"), ("#febc2e", "#dea123"), ("#28c840", "#1aab29")]):
+        P.append(f'<circle cx="{20 + i * 20}" cy="{TITLE_H / 2:.0f}" r="6" fill="{c1}" stroke="{c2}" stroke-width="0.8"/>')
+    P.append(f'<text class="t" x="{W / 2:.0f}" y="{TITLE_H / 2 + 5:.0f}">{escape(title)}</text>')
+    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scr)"/>')
     P.append('<g filter="url(#glow)">')
     # prompt line, typed character by character
     chars, i = [], 0
@@ -191,7 +204,7 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
         P.append(f'<text class="a" x="{x_art}" y="{y:.1f}"{op0} textLength="{len(cells)*advA:.1f}" lengthAdjust="spacingAndGlyphs">{tspans(cells)}{appear(t_out + a.row_dt * r_i)}</text>')
     # info block
     def info_text(r_i, inner, n):
-        y = y_top + r_i * FI + FI * ASC
+        y = y_top + r_i * LHI + base_off
         return f'<text class="i" x="{x_info}" y="{y:.1f}"{op0} textLength="{n*advI:.1f}" lengthAdjust="spacingAndGlyphs">{inner}{appear(t_out + a.row_dt * r_i)}</text>'
     P.append(info_text(0, f'<tspan class="u">{escape(user_host)}</tspan>', len(user_host)))
     P.append(info_text(1, f'<tspan class="d">{"-" * len(user_host)}</tspan>', len(user_host)))
@@ -204,12 +217,13 @@ text{{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospa
         blocks = "".join(f'<tspan fill="{c}">███</tspan>' for c in CGA[r_i * 8:(r_i + 1) * 8])
         P.append(info_text(base + r_i, blocks, 24))
     # closing prompt with blinking cursor
-    y_end = max(y_top + len(rows) * FA, y_top + (base + 2) * FI) + FI * ASC + 4
+    y_end = max(y_top + len(rows) * FA, y_top + (base + 2) * LHI) + base_off + 4
     cur = '<tspan>█<animate attributeName="opacity" values="1;1;0;0" dur="1.1s" repeatCount="indefinite"/></tspan>' if anim else "█"
     P.append(f'<text class="i" x="{x_art}" y="{y_end:.1f}"{op0}><tspan class="u">{escape(user_host)}</tspan>:~$ {cur}{appear(t_end)}</text>')
     P.append("</g>")
-    P.append(f'<rect x="{BEZEL}" y="{BEZEL}" width="{W-2*BEZEL}" height="{H-2*BEZEL}" rx="10" fill="url(#scan)"/>')
-    P.append(f'<rect x="{BEZEL}" y="{BEZEL}" width="{W-2*BEZEL}" height="{H-2*BEZEL}" rx="10" fill="url(#vig)"/>')
+    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#scan)"/>')
+    P.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="4" fill="url(#vig)"/>')
+    P.append("</g>")
     P.append("</svg>\n")
     svg = "\n".join(P)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
@@ -225,7 +239,7 @@ if __name__ == "__main__":
     ap.add_argument("--font", default=os.path.join(here, "..", "fonts", "VT323-subset.woff2"))
     ap.add_argument("--cmd", default="whoami"); ap.add_argument("--width", type=float, default=900, help="minimum card width in px; content stays left-aligned")
     ap.add_argument("--phosphor", choices=PHOSPHOR, default="green"); ap.add_argument("--accent", choices=ACCENT, default="amber")
-    ap.add_argument("--cols", type=int, default=100); ap.add_argument("--art-size", type=float, default=8.5); ap.add_argument("--info-size", type=float, default=17.0)
+    ap.add_argument("--cols", type=int, default=100); ap.add_argument("--art-size", type=float, default=8.5); ap.add_argument("--info-size", type=float, default=20.0); ap.add_argument("--line-height", type=float, default=1.15)
     ap.add_argument("--crop", default="0.087,0,0.87,0.913", help="left,top,right,bottom as fractions"); ap.add_argument("--edge", type=float, default=0.0)
     ap.add_argument("--dark", type=float, default=0.6); ap.add_argument("--knee", type=float, default=0.75); ap.add_argument("--contrast", type=float, default=1.3)
     ap.add_argument("--floor", type=float, default=0.18); ap.add_argument("--floor-until", type=float, default=0.3)
