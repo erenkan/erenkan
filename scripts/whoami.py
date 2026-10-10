@@ -147,7 +147,7 @@ def build(a):
     art_w, art_h = a.cols * advA, len(rows) * FA
     info_w = max(len(l) for l in info + [" " * prompt_len]) * advI
     line = FI + 6
-    W = int(round(BEZEL + PAD + art_w + GAP + info_w + PAD + BEZEL))
+    W = int(round(max(BEZEL + PAD + art_w + GAP + info_w + PAD + BEZEL, a.width)))   # extra width = blank screen on the right
     H = int(round(BEZEL + PAD + line + max(art_h, (len(info) + 4) * FI) + line + PAD + BEZEL))
     x_art, x_info = BEZEL + PAD, BEZEL + PAD + art_w + GAP
     y_prompt, y_top = BEZEL + PAD + FI * ASC, BEZEL + PAD + line
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=os.path.join(here, "..", "whoami.svg"))
     ap.add_argument("--info", default=os.path.join(here, "info.txt"))
     ap.add_argument("--font", default=os.path.join(here, "..", "fonts", "VT323-subset.woff2"))
-    ap.add_argument("--cmd", default="whoami")
+    ap.add_argument("--cmd", default="whoami"); ap.add_argument("--width", type=float, default=900, help="minimum card width in px; content stays left-aligned")
     ap.add_argument("--phosphor", choices=PHOSPHOR, default="green"); ap.add_argument("--accent", choices=ACCENT, default="amber")
     ap.add_argument("--cols", type=int, default=100); ap.add_argument("--art-size", type=float, default=8.5); ap.add_argument("--info-size", type=float, default=17.0)
     ap.add_argument("--crop", default="0.087,0,0.87,0.913", help="left,top,right,bottom as fractions"); ap.add_argument("--edge", type=float, default=0.0)

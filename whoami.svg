@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="756" height="526" viewBox="0 0 756 526" role="img" aria-label="Retro terminal card: ASCII portrait of Eren Kan with a whoami-style profile summary">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="526" viewBox="0 0 900 526" role="img" aria-label="Retro terminal card: ASCII portrait of Eren Kan with a whoami-style profile summary">
 <title>Retro terminal card: ASCII portrait of Eren Kan with a whoami-style profile summary</title>
 <defs>
 <style>
@@ -14,8 +14,8 @@ text{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospac
 <pattern id="scan" width="2" height="3" patternUnits="userSpaceOnUse"><rect width="2" height="1" fill="#000" opacity="0.32"/></pattern>
 <filter id="glow" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="1.1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
-<rect width="756" height="526" rx="18" fill="url(#bz)"/>
-<rect x="14" y="14" width="728" height="498" rx="10" fill="url(#scr)"/>
+<rect width="900" height="526" rx="18" fill="url(#bz)"/>
+<rect x="14" y="14" width="872" height="498" rx="10" fill="url(#scr)"/>
 <g filter="url(#glow)">
 <text class="i" x="40" y="53.6" textLength="163.2" lengthAdjust="spacingAndGlyphs"><tspan class="u" opacity="0">e<set attributeName="opacity" to="1" begin="0.40s" fill="freeze"/></tspan><tspan class="u" opacity="0">r<set attributeName="opacity" to="1" begin="0.46s" fill="freeze"/></tspan><tspan class="u" opacity="0">e<set attributeName="opacity" to="1" begin="0.51s" fill="freeze"/></tspan><tspan class="u" opacity="0">n<set attributeName="opacity" to="1" begin="0.57s" fill="freeze"/></tspan><tspan class="u" opacity="0">k<set attributeName="opacity" to="1" begin="0.62s" fill="freeze"/></tspan><tspan class="u" opacity="0">a<set attributeName="opacity" to="1" begin="0.68s" fill="freeze"/></tspan><tspan class="u" opacity="0">n<set attributeName="opacity" to="1" begin="0.73s" fill="freeze"/></tspan><tspan class="u" opacity="0">@<set attributeName="opacity" to="1" begin="0.79s" fill="freeze"/></tspan><tspan class="u" opacity="0">g<set attributeName="opacity" to="1" begin="0.84s" fill="freeze"/></tspan><tspan class="u" opacity="0">i<set attributeName="opacity" to="1" begin="0.90s" fill="freeze"/></tspan><tspan class="u" opacity="0">t<set attributeName="opacity" to="1" begin="0.95s" fill="freeze"/></tspan><tspan class="u" opacity="0">h<set attributeName="opacity" to="1" begin="1.00s" fill="freeze"/></tspan><tspan class="u" opacity="0">u<set attributeName="opacity" to="1" begin="1.06s" fill="freeze"/></tspan><tspan class="u" opacity="0">b<set attributeName="opacity" to="1" begin="1.11s" fill="freeze"/></tspan><tspan opacity="0">:<set attributeName="opacity" to="1" begin="1.17s" fill="freeze"/></tspan><tspan opacity="0">~<set attributeName="opacity" to="1" begin="1.23s" fill="freeze"/></tspan><tspan opacity="0">$<set attributeName="opacity" to="1" begin="1.28s" fill="freeze"/></tspan><tspan opacity="0"> <set attributeName="opacity" to="1" begin="1.33s" fill="freeze"/></tspan><tspan class="c" opacity="0">w<set attributeName="opacity" to="1" begin="1.39s" fill="freeze"/></tspan><tspan class="c" opacity="0">h<set attributeName="opacity" to="1" begin="1.44s" fill="freeze"/></tspan><tspan class="c" opacity="0">o<set attributeName="opacity" to="1" begin="1.50s" fill="freeze"/></tspan><tspan class="c" opacity="0">a<set attributeName="opacity" to="1" begin="1.56s" fill="freeze"/></tspan><tspan class="c" opacity="0">m<set attributeName="opacity" to="1" begin="1.61s" fill="freeze"/></tspan><tspan class="c" opacity="0">i<set attributeName="opacity" to="1" begin="1.67s" fill="freeze"/></tspan></text>
 <text class="a" x="40" y="86.8" opacity="0" textLength="204.0" lengthAdjust="spacingAndGlyphs"><tspan opacity="0.55">                                      ....::::::::::::::::..</tspan><set attributeName="opacity" to="1" begin="2.16s" fill="freeze"/></text>
@@ -75,6 +75,6 @@ text{font-family:"VT323",ui-monospace,Menlo,Consolas,"DejaVu Sans Mono",monospac
 <text class="i" x="410.00000000000006" y="314.6" opacity="0" textLength="163.2" lengthAdjust="spacingAndGlyphs"><tspan fill="#555555">███</tspan><tspan fill="#ff5555">███</tspan><tspan fill="#55ff55">███</tspan><tspan fill="#ffff55">███</tspan><tspan fill="#5555ff">███</tspan><tspan fill="#ff55ff">███</tspan><tspan fill="#55ffff">███</tspan><tspan fill="#ffffff">███</tspan><set attributeName="opacity" to="1" begin="2.70s" fill="freeze"/></text>
 <text class="i" x="40" y="480.1" opacity="0"><tspan class="u">erenkan@github</tspan>:~$ <tspan>█<animate attributeName="opacity" values="1;1;0;0" dur="1.1s" repeatCount="indefinite"/></tspan><set attributeName="opacity" to="1" begin="4.39s" fill="freeze"/></text>
 </g>
-<rect x="14" y="14" width="728" height="498" rx="10" fill="url(#scan)"/>
-<rect x="14" y="14" width="728" height="498" rx="10" fill="url(#vig)"/>
+<rect x="14" y="14" width="872" height="498" rx="10" fill="url(#scan)"/>
+<rect x="14" y="14" width="872" height="498" rx="10" fill="url(#vig)"/>
 </svg>
